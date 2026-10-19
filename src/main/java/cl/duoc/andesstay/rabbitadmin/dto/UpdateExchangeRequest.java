@@ -1,9 +1,8 @@
-package cl.duoc.andesstay.rabbitadmin.web;
+package cl.duoc.andesstay.rabbitadmin.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record CreateExchangeRequest(
-		@NotBlank String name,
+public record UpdateExchangeRequest(
 		@NotBlank String type,
 		boolean durable,
 		boolean autoDelete) {

@@ -29,14 +29,19 @@ Respuesta esperada cuando RabbitMQ local está arriba:
 
 ## API
 
+La lógica de administración vive en `RabbitAdminService`. Los controllers solo delegan; no usan `RabbitAdmin`/`AmqpAdmin` directamente.
+
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | `GET` | `/api/rabbit/health` | Estado del servicio y conexión a RabbitMQ |
 | `POST` | `/api/rabbit/queues` | Crear cola |
+| `PUT` | `/api/rabbit/queues/{name}` | Actualizar cola (redeclara) |
 | `DELETE` | `/api/rabbit/queues/{name}` | Eliminar cola |
 | `POST` | `/api/rabbit/exchanges` | Crear exchange (`direct`, `topic`, `fanout`, `headers`) |
+| `PUT` | `/api/rabbit/exchanges/{name}` | Actualizar exchange (redeclara) |
 | `DELETE` | `/api/rabbit/exchanges/{name}` | Eliminar exchange |
 | `POST` | `/api/rabbit/bindings` | Crear binding cola ↔ exchange |
+| `PUT` | `/api/rabbit/bindings` | Actualizar binding (redeclara) |
 | `DELETE` | `/api/rabbit/bindings` | Eliminar binding (body JSON) |
 
 Ejemplos:

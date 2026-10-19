@@ -1,9 +1,11 @@
 package cl.duoc.andesstay.rabbitadmin.service;
 
-import cl.duoc.andesstay.rabbitadmin.web.CreateBindingRequest;
-import cl.duoc.andesstay.rabbitadmin.web.CreateExchangeRequest;
-import cl.duoc.andesstay.rabbitadmin.web.CreateQueueRequest;
-import cl.duoc.andesstay.rabbitadmin.web.DeleteBindingRequest;
+import cl.duoc.andesstay.rabbitadmin.dto.CreateBindingRequest;
+import cl.duoc.andesstay.rabbitadmin.dto.CreateExchangeRequest;
+import cl.duoc.andesstay.rabbitadmin.dto.CreateQueueRequest;
+import cl.duoc.andesstay.rabbitadmin.dto.DeleteBindingRequest;
+import cl.duoc.andesstay.rabbitadmin.dto.UpdateExchangeRequest;
+import cl.duoc.andesstay.rabbitadmin.dto.UpdateQueueRequest;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -29,14 +31,13 @@ public class RabbitAdminService {
 	}
 
 	public Map<String, Object> createQueue(CreateQueueRequest request) {
-		String name = requireName(request.name(), "queue name");
-		Queue queue = new Queue(name, request.durable(), request.exclusive(), request.autoDelete());
-		rabbitAdmin.declareQueue(queue);
-		return Map.of(
-				"name", name,
-				"durable", request.durable(),
-				"exclusive", request.exclusive(),
-				"autoDelete", request.autoDelete());
+		return declareQueue(request.name(), request.durable(), request.exclusive(), request.autoDelete());
+	}
+
+	public Map<String, Object> updateQueue(String name, UpdateQueueRequest request) {
+		String queue = requireName(name, "queue name");
+		deleteQueueIfPresent(queue);
+		return declareQueue(queue, request.durable(), request.exclusive(), request.autoDelete());
 	}
 
 	public void deleteQueue(String name) {
@@ -48,21 +49,13 @@ public class RabbitAdminService {
 	}
 
 	public Map<String, Object> createExchange(CreateExchangeRequest request) {
-		String name = requireName(request.name(), "exchange name");
-		String type = requireExchangeType(request.type());
-		Exchange exchange = switch (type) {
-			case "direct" -> new DirectExchange(name, request.durable(), request.autoDelete());
-			case "topic" -> new TopicExchange(name, request.durable(), request.autoDelete());
-			case "fanout" -> new FanoutExchange(name, request.durable(), request.autoDelete());
-			case "headers" -> new HeadersExchange(name, request.durable(), request.autoDelete());
-			default -> throw new IllegalArgumentException("Unsupported exchange type: " + type);
-		};
-		rabbitAdmin.declareExchange(exchange);
-		return Map.of(
-				"name", name,
-				"type", type,
-				"durable", request.durable(),
-				"autoDelete", request.autoDelete());
+		return declareExchange(request.name(), request.type(), request.durable(), request.autoDelete());
+	}
+
+	public Map<String, Object> updateExchange(String name, UpdateExchangeRequest request) {
+		String exchange = requireName(name, "exchange name");
+		deleteExchangeIfPresent(exchange);
+		return declareExchange(exchange, request.type(), request.durable(), request.autoDelete());
 	}
 
 	public void deleteExchange(String name) {
@@ -74,14 +67,15 @@ public class RabbitAdminService {
 	}
 
 	public Map<String, Object> createBinding(CreateBindingRequest request) {
+		return declareBinding(request.queue(), request.exchange(), request.routingKey());
+	}
+
+	public Map<String, Object> updateBinding(CreateBindingRequest request) {
 		String queueName = requireName(request.queue(), "queue");
 		String exchangeName = requireName(request.exchange(), "exchange");
 		String routingKey = requireName(request.routingKey(), "routingKey");
-		rabbitAdmin.declareBinding(binding(queueName, exchangeName, routingKey));
-		return Map.of(
-				"queue", queueName,
-				"exchange", exchangeName,
-				"routingKey", routingKey);
+		rabbitAdmin.removeBinding(binding(queueName, exchangeName, routingKey));
+		return declareBinding(queueName, exchangeName, routingKey);
 	}
 
 	public void deleteBinding(DeleteBindingRequest request) {
@@ -89,6 +83,54 @@ public class RabbitAdminService {
 		String exchangeName = requireName(request.exchange(), "exchange");
 		String routingKey = requireName(request.routingKey(), "routingKey");
 		rabbitAdmin.removeBinding(binding(queueName, exchangeName, routingKey));
+	}
+
+	private Map<String, Object> declareQueue(String rawName, boolean durable, boolean exclusive, boolean autoDelete) {
+		String name = requireName(rawName, "queue name");
+		Queue queue = new Queue(name, durable, exclusive, autoDelete);
+		rabbitAdmin.declareQueue(queue);
+		return Map.of(
+				"name", name,
+				"durable", durable,
+				"exclusive", exclusive,
+				"autoDelete", autoDelete);
+	}
+
+	private Map<String, Object> declareExchange(String rawName, String rawType, boolean durable, boolean autoDelete) {
+		String name = requireName(rawName, "exchange name");
+		String type = requireExchangeType(rawType);
+		Exchange exchange = switch (type) {
+			case "direct" -> new DirectExchange(name, durable, autoDelete);
+			case "topic" -> new TopicExchange(name, durable, autoDelete);
+			case "fanout" -> new FanoutExchange(name, durable, autoDelete);
+			case "headers" -> new HeadersExchange(name, durable, autoDelete);
+			default -> throw new IllegalArgumentException("Unsupported exchange type: " + type);
+		};
+		rabbitAdmin.declareExchange(exchange);
+		return Map.of(
+				"name", name,
+				"type", type,
+				"durable", durable,
+				"autoDelete", autoDelete);
+	}
+
+	private Map<String, Object> declareBinding(String queue, String exchange, String routingKey) {
+		String queueName = requireName(queue, "queue");
+		String exchangeName = requireName(exchange, "exchange");
+		String key = requireName(routingKey, "routingKey");
+		rabbitAdmin.declareBinding(binding(queueName, exchangeName, key));
+		return Map.of(
+				"queue", queueName,
+				"exchange", exchangeName,
+				"routingKey", key);
+	}
+
+	private void deleteQueueIfPresent(String queue) {
+		rabbitAdmin.deleteQueue(queue);
+	}
+
+	private void deleteExchangeIfPresent(String exchange) {
+		rabbitAdmin.deleteExchange(exchange);
 	}
 
 	private static Binding binding(String queueName, String exchangeName, String routingKey) {
