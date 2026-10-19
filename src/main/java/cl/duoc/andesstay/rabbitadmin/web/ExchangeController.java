@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/rabbit/exchanges")
+@RequestMapping("/api/exchanges")
 public class ExchangeController {
 
 	private final RabbitAdminService rabbitAdminService;

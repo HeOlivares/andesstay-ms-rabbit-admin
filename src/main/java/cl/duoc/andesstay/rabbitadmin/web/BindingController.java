@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/rabbit/bindings")
+@RequestMapping("/api/bindings")
 public class BindingController {
 
 	private final RabbitAdminService rabbitAdminService;
