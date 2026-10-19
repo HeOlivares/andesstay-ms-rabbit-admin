@@ -1,0 +1,15 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  rabbit-admin:
+    build: .
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SERVER_PORT: 8085
+    ports:
+      - "8085:8085"
+    depends_on:
+      - rabbitmq
