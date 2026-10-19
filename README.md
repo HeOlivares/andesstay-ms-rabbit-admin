@@ -90,6 +90,31 @@ curl -X DELETE http://localhost:8085/api/bindings ^
   -d "{\"queue\":\"q.demo\",\"exchange\":\"cmd.demo\",\"routingKey\":\"demo.key\"}"
 ```
 
+### Validación (HTTP 400)
+
+Los DTO usan `@Valid` + Bean Validation. Nombres vacíos o configs inválidas responden `400` con mensaje claro:
+
+```bash
+curl -i -X POST http://localhost:8085/api/queues ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"\",\"durable\":true,\"exclusive\":false,\"autoDelete\":false}"
+```
+
+Ejemplo de respuesta:
+
+```http
+HTTP/1.1 400
+{"error":"name must not be blank"}
+```
+
+Tipo de exchange inválido:
+
+```bash
+curl -i -X POST http://localhost:8085/api/exchanges ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"ex.demo\",\"type\":\"stream\",\"durable\":true,\"autoDelete\":false}"
+```
+
 ## Variables
 
 | Variable | Default | Uso |

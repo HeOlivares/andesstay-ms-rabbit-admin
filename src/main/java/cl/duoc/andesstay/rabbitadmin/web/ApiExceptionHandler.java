@@ -3,6 +3,7 @@ package cl.duoc.andesstay.rabbitadmin.web;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -22,5 +23,11 @@ public class ApiExceptionHandler {
 				.map(error -> error.getField() + " " + error.getDefaultMessage())
 				.orElse("invalid request");
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", message));
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<Map<String, String>> unreadable(HttpMessageNotReadableException failure) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(Map.of("error", "request body is invalid or malformed JSON"));
 	}
 }
