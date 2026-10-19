@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/rabbit/queues")
+@RequestMapping("/api/queues")
 public class QueueController {
 
 	private final RabbitAdminService rabbitAdminService;

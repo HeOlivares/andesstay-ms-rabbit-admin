@@ -1,8 +1,8 @@
 # andesstay-ms-rabbit-admin
 
-Microservicio administrador de RabbitMQ para AndesStay (tarjeta H2).
+Microservicio administrador de RabbitMQ para AndesStay.
 
-Spring Boot 3.4 / Java 21. Expone una API REST para crear y eliminar colas, exchanges y bindings.
+Spring Boot 3.4 / Java 21. Expone una API REST para crear, actualizar y eliminar colas, exchanges y bindings.
 
 ## Arranque local
 
@@ -14,7 +14,7 @@ docker compose up -d rabbitmq
 Health (incluye prueba de conexión AMQP):
 
 ```bash
-curl http://localhost:8085/api/rabbit/health
+curl http://localhost:8085/api/health
 ```
 
 Respuesta esperada cuando RabbitMQ local está arriba:
@@ -27,37 +27,92 @@ Respuesta esperada cuando RabbitMQ local está arriba:
 }
 ```
 
-## API
+## API REST
 
-La lógica de administración vive en `RabbitAdminService`. Los controllers solo delegan; no usan `RabbitAdmin`/`AmqpAdmin` directamente.
+La lógica vive en `RabbitAdminService`. Los controllers solo delegan.
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
-| `GET` | `/api/rabbit/health` | Estado del servicio y conexión a RabbitMQ |
-| `POST` | `/api/rabbit/queues` | Crear cola |
-| `PUT` | `/api/rabbit/queues/{name}` | Actualizar cola (redeclara) |
-| `DELETE` | `/api/rabbit/queues/{name}` | Eliminar cola |
-| `POST` | `/api/rabbit/exchanges` | Crear exchange (`direct`, `topic`, `fanout`, `headers`) |
-| `PUT` | `/api/rabbit/exchanges/{name}` | Actualizar exchange (redeclara) |
-| `DELETE` | `/api/rabbit/exchanges/{name}` | Eliminar exchange |
-| `POST` | `/api/rabbit/bindings` | Crear binding cola ↔ exchange |
-| `PUT` | `/api/rabbit/bindings` | Actualizar binding (redeclara) |
-| `DELETE` | `/api/rabbit/bindings` | Eliminar binding (body JSON) |
+| `GET` | `/api/health` | Estado del servicio y conexión a RabbitMQ |
+| `POST` | `/api/queues` | Crear cola |
+| `PUT` | `/api/queues/{name}` | Actualizar cola (redeclara) |
+| `DELETE` | `/api/queues/{name}` | Eliminar cola |
+| `POST` | `/api/exchanges` | Crear exchange (`direct`, `topic`, `fanout`, `headers`) |
+| `PUT` | `/api/exchanges/{name}` | Actualizar exchange (redeclara) |
+| `DELETE` | `/api/exchanges/{name}` | Eliminar exchange |
+| `POST` | `/api/bindings` | Crear binding cola ↔ exchange |
+| `PUT` | `/api/bindings` | Actualizar binding (redeclara) |
+| `DELETE` | `/api/bindings` | Eliminar binding (body JSON) |
 
-Ejemplos:
+### Ejemplos curl (Windows `cmd`)
+
+Crear cola:
 
 ```bash
-curl -X POST http://localhost:8085/api/rabbit/queues ^
+curl -X POST http://localhost:8085/api/queues ^
   -H "Content-Type: application/json" ^
   -d "{\"name\":\"q.demo\",\"durable\":true,\"exclusive\":false,\"autoDelete\":false}"
+```
 
-curl -X POST http://localhost:8085/api/rabbit/exchanges ^
+Eliminar cola:
+
+```bash
+curl -X DELETE http://localhost:8085/api/queues/q.demo
+```
+
+Crear exchange:
+
+```bash
+curl -X POST http://localhost:8085/api/exchanges ^
   -H "Content-Type: application/json" ^
   -d "{\"name\":\"cmd.demo\",\"type\":\"direct\",\"durable\":true,\"autoDelete\":false}"
+```
 
-curl -X POST http://localhost:8085/api/rabbit/bindings ^
+Eliminar exchange:
+
+```bash
+curl -X DELETE http://localhost:8085/api/exchanges/cmd.demo
+```
+
+Crear binding:
+
+```bash
+curl -X POST http://localhost:8085/api/bindings ^
   -H "Content-Type: application/json" ^
   -d "{\"queue\":\"q.demo\",\"exchange\":\"cmd.demo\",\"routingKey\":\"demo.key\"}"
+```
+
+Eliminar binding:
+
+```bash
+curl -X DELETE http://localhost:8085/api/bindings ^
+  -H "Content-Type: application/json" ^
+  -d "{\"queue\":\"q.demo\",\"exchange\":\"cmd.demo\",\"routingKey\":\"demo.key\"}"
+```
+
+### Validación (HTTP 400)
+
+Los DTO usan `@Valid` + Bean Validation. Nombres vacíos o configs inválidas responden `400` con mensaje claro:
+
+```bash
+curl -i -X POST http://localhost:8085/api/queues ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"\",\"durable\":true,\"exclusive\":false,\"autoDelete\":false}"
+```
+
+Ejemplo de respuesta:
+
+```http
+HTTP/1.1 400
+{"error":"name must not be blank"}
+```
+
+Tipo de exchange inválido:
+
+```bash
+curl -i -X POST http://localhost:8085/api/exchanges ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"ex.demo\",\"type\":\"stream\",\"durable\":true,\"autoDelete\":false}"
 ```
 
 ## Variables

@@ -35,7 +35,7 @@ class QueueControllerTest {
 		when(rabbitAdminService.createQueue(any(CreateQueueRequest.class)))
 				.thenReturn(Map.of("name", "q.demo", "durable", true, "exclusive", false, "autoDelete", false));
 
-		mockMvc.perform(post("/api/rabbit/queues")
+		mockMvc.perform(post("/api/queues")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{"name":"q.demo","durable":true,"exclusive":false,"autoDelete":false}
@@ -51,7 +51,7 @@ class QueueControllerTest {
 		when(rabbitAdminService.updateQueue(eq("q.demo"), any(UpdateQueueRequest.class)))
 				.thenReturn(Map.of("name", "q.demo", "durable", true, "exclusive", false, "autoDelete", false));
 
-		mockMvc.perform(put("/api/rabbit/queues/q.demo")
+		mockMvc.perform(put("/api/queues/q.demo")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{"durable":true,"exclusive":false,"autoDelete":false}
@@ -63,7 +63,7 @@ class QueueControllerTest {
 
 	@Test
 	void deleteDelegatesToServiceOnly() throws Exception {
-		mockMvc.perform(delete("/api/rabbit/queues/q.demo"))
+		mockMvc.perform(delete("/api/queues/q.demo"))
 				.andExpect(status().isNoContent());
 
 		verify(rabbitAdminService).deleteQueue("q.demo");
