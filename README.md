@@ -44,6 +44,18 @@ La lógica vive en `RabbitAdminService`. Los controllers solo delegan.
 | `PUT` | `/api/bindings` | Actualizar binding (redeclara) |
 | `DELETE` | `/api/bindings` | Eliminar binding (body JSON) |
 
+### Códigos HTTP
+
+| Código | Cuándo |
+| --- | --- |
+| `201` | Recurso creado (`POST`) |
+| `200` | Recurso actualizado (`PUT`) |
+| `204` | Eliminación OK (`DELETE`) |
+| `400` | Validación / body inválido |
+| `404` | Cola o exchange inexistente al borrar |
+
+**Nota PUT:** `PUT` redeclara (borra y vuelve a crear). Los mensajes encolados en esa cola **se pierden**.
+
 ### Ejemplos curl (Windows `cmd`)
 
 Crear cola:

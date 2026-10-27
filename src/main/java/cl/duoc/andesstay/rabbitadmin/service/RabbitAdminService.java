@@ -42,10 +42,10 @@ public class RabbitAdminService {
 
 	public void deleteQueue(String name) {
 		String queue = requireName(name, "queue name");
-		boolean removed = Boolean.TRUE.equals(rabbitAdmin.deleteQueue(queue));
-		if (!removed) {
-			throw new IllegalArgumentException("Queue not found or could not be deleted: " + queue);
+		if (rabbitAdmin.getQueueProperties(queue) == null) {
+			throw new ResourceNotFoundException("Queue not found: " + queue);
 		}
+		rabbitAdmin.deleteQueue(queue);
 	}
 
 	public Map<String, Object> createExchange(CreateExchangeRequest request) {
@@ -60,10 +60,10 @@ public class RabbitAdminService {
 
 	public void deleteExchange(String name) {
 		String exchange = requireName(name, "exchange name");
-		boolean removed = rabbitAdmin.deleteExchange(exchange);
-		if (!removed) {
-			throw new IllegalArgumentException("Exchange not found or could not be deleted: " + exchange);
+		if (!exchangeExists(exchange)) {
+			throw new ResourceNotFoundException("Exchange not found: " + exchange);
 		}
+		rabbitAdmin.deleteExchange(exchange);
 	}
 
 	public Map<String, Object> createBinding(CreateBindingRequest request) {
@@ -131,6 +131,18 @@ public class RabbitAdminService {
 
 	private void deleteExchangeIfPresent(String exchange) {
 		rabbitAdmin.deleteExchange(exchange);
+	}
+
+	private boolean exchangeExists(String name) {
+		try {
+			Boolean present = rabbitAdmin.getRabbitTemplate().execute(channel -> {
+				channel.exchangeDeclarePassive(name);
+				return Boolean.TRUE;
+			});
+			return Boolean.TRUE.equals(present);
+		} catch (RuntimeException missing) {
+			return false;
+		}
 	}
 
 	private static Binding binding(String queueName, String exchangeName, String routingKey) {

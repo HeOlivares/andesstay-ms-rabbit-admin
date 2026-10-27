@@ -2,6 +2,7 @@ package cl.duoc.andesstay.rabbitadmin.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -13,15 +14,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import cl.duoc.andesstay.rabbitadmin.dto.CreateQueueRequest;
 import cl.duoc.andesstay.rabbitadmin.dto.UpdateQueueRequest;
 import cl.duoc.andesstay.rabbitadmin.service.RabbitAdminService;
+import cl.duoc.andesstay.rabbitadmin.service.ResourceNotFoundException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = QueueController.class)
+@Import(ApiExceptionHandler.class)
 class QueueControllerTest {
 
 	@Autowired
@@ -67,5 +71,16 @@ class QueueControllerTest {
 				.andExpect(status().isNoContent());
 
 		verify(rabbitAdminService).deleteQueue("q.demo");
+	}
+
+	@Test
+	void deleteMissingQueueReturns404() throws Exception {
+		doThrow(new ResourceNotFoundException("Queue not found: q.missing"))
+				.when(rabbitAdminService)
+				.deleteQueue("q.missing");
+
+		mockMvc.perform(delete("/api/queues/q.missing"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.error").value("Queue not found: q.missing"));
 	}
 }

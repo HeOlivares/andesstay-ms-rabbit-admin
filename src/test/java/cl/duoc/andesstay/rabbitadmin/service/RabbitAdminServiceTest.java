@@ -15,10 +15,12 @@ import cl.duoc.andesstay.rabbitadmin.dto.UpdateExchangeRequest;
 import cl.duoc.andesstay.rabbitadmin.dto.UpdateQueueRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 class RabbitAdminServiceTest {
 
@@ -55,9 +57,28 @@ class RabbitAdminServiceTest {
 
 	@Test
 	void deleteQueueFailsWhenMissing() {
-		when(rabbitAdmin.deleteQueue("missing")).thenReturn(false);
+		when(rabbitAdmin.getQueueProperties("missing")).thenReturn(null);
 
-		assertThrows(IllegalArgumentException.class, () -> service.deleteQueue("missing"));
+		assertThrows(ResourceNotFoundException.class, () -> service.deleteQueue("missing"));
+	}
+
+	@Test
+	void deleteQueueRemovesExistingQueue() {
+		when(rabbitAdmin.getQueueProperties("q.demo")).thenReturn(new java.util.Properties());
+		when(rabbitAdmin.deleteQueue("q.demo")).thenReturn(true);
+
+		service.deleteQueue("q.demo");
+
+		verify(rabbitAdmin).deleteQueue("q.demo");
+	}
+
+	@Test
+	void deleteExchangeFailsWhenMissing() {
+		RabbitTemplate template = mock(RabbitTemplate.class);
+		when(rabbitAdmin.getRabbitTemplate()).thenReturn(template);
+		when(template.execute(any())).thenThrow(new AmqpIOException(new java.io.IOException("NOT_FOUND")));
+
+		assertThrows(ResourceNotFoundException.class, () -> service.deleteExchange("missing"));
 	}
 
 	@Test
